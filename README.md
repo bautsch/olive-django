@@ -15,3 +15,5 @@ Neat features include:
 - Auto calculates percentiles for all output
 - Overengineered paper trail, nothing is deleted
 - Convenient use of CSVs to export and import data
+
+![screenshot of olive frontend](https://github.com/bautsch/olive-django/blob/master/images/example.png?raw=true)
