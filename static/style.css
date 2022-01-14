@@ -1,0 +1,39 @@
+body {
+    padding-top: 70px;
+}
+
+.tableFixHead {
+    overflow-y: auto;
+    height: 85vh;
+    width: auto;
+  }
+  
+  .tableFixHead table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  .tableFixHead th,
+  .tableFixHead td {
+    padding: 8px 16px;
+  }
+  
+  .tableFixHead th {
+    position: sticky;
+    top: 0;
+    background: #f8f9fa;
+  }
+
+  #progress {
+    display: none;
+  }
+
+  .nav_button {
+    width: 100px !important;
+    height: 40px !important;
+  }
+
+  #id_scenario, #id_user {
+    margin-top: 8px !important;
+    margin-right: 10px !important;
+  }

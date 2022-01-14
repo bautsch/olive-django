@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+{% load static %}
+{% load tags %}
+{% load tz %}
+{% localtime on %}
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>olive</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        <link href="{% static 'style.css' %}" rel="stylesheet" type="text/css">
+    </head>
+    <body> 
+        <div class="modal fade" id="CreateModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Select file for creating <strong>schedule</strong>
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% if load %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_create" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="{{ load }}" value="{{ scen|get_obj_attr:load }}">
+                                <input type="text" class="d-none" name="create_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                        {% endif %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="RunProbModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Probability Run</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Run probabilistic model
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="text"  name="num_simulations" id="num_prob_simulations" required placeholder="Simulations">
+                                <br>
+                                <input type="text" name="low_pct" id="low_pct" class="w-50" required placeholder="Low percentile">
+                                <input type="text" name="mid_pct" id="mid_pct" class="w-50" required placeholder="Mid percentile">
+                                <input type="text" name="high_pct" id="high_pct" class="w-50" required placeholder="High percentile">
+                                <br>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="run_probabilistic" class="btn btn-primary" data-bs-dismiss="modal" name="run_probabilistic" value="Run" disabled>
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadInputsModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Continue with updating and loading new schedule inputs?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_sched_inputs" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="schedule_inputs" value="schedule_inputs">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadPDPModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Select file for loading <strong>producing forecasts</strong>
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% for scen in scenarios %}
+                            <input type="file" class="form-control" name="file" id="customFile">
+                            <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                            <input type="submit" id="load_conf_button_create" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                            <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                            <input type="text" class="d-none" name="scenario" value="{{ scen.scenario }}">
+                            <input type="text" class="d-none" name="load_pdp_confirmed" value="true">
+                            <input type="text" class="d-none" name="user" value="{{ user }}">
+                        {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadTCModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Select file for loading <strong>type curves</strong>
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% for scen in scenarios %}
+                            <input type="file" class="form-control" name="file" id="customFile">
+                            <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                            <input type="submit" id="load_conf_button_tc" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                            <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                            <input type="text" class="d-none" name="scenario" value="{{ scen.scenario }}">
+                            <input type="text" class="d-none" name="load_tc_confirmed" value="true">
+                            <input type="text" class="d-none" name="user" value="{{ user }}">
+                        {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadProject" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <strong>Project</strong>   |  Continue with loading?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_project" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="project" value="{{ scen.project }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadProperties" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <strong>Properties</strong>   |  Continue with loading?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_properties" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="properties" value="{{ scen.properties }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadFramework" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <strong>Framework</strong>   |  Continue with loading?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_framework" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="framework" value="{{ scen.framework }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadSchedule" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <strong>Schedule</strong>   |  Continue with loading?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_schedule" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="schedule" value="{{ scen.schedule }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadEconomics" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <strong>Economics</strong>   |  Continue with loading?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_econ" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="economics" value="{{ scen.economics }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadForecast" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <strong>Forecast</strong>   |  Continue with loading?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_forecast" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="forecast" value="{{ scen.forecast }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadPriceDeck" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <strong>Price Deck</strong>   |  Continue with loading?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_price" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="price_deck" value="{{ scen.price_deck }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="LoadProbability" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Load Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <strong>Probability</strong>   |  Continue with loading?
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="file" class="form-control" name="file" id="customFile">
+                                <button type="button" class="btn btn-secondary m-2" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="load_conf_button_prob" class="btn btn-primary" data-bs-dismiss="modal" name="load" value="Load">
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="probability" value="{{ scen.probability }}">
+                                <input type="text" class="d-none" name="load_confirmed" value="true">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="RunAggModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Aggregation Run</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Aggregate results
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST">
+                        {% csrf_token %}
+                            {% for scen in scenarios %}
+                                <input type="text"  name="num_simulations" id="num_agg_simulations" required placeholder="Simulations">
+                                <input type="text"  name="num_aggregations" id="num_aggregations" required placeholder="Aggregations">
+                                <label for="agg_field">Aggregate on:</label>
+                                <select id="agg_field" name="agg_field">
+                                    <option value="scenario">scenario</option>
+                                    <option value="idp">idp</option>
+                                    <option value="short_pad">short pad</option>
+                                    <option value="pad">pad</option>
+                                    <option value="rig">rig</option>
+                                    <option value="field">field</option>
+                                </select>
+                                <br>
+                                {{ output_list }}
+                                <br>
+                                <input type="text" name="low_pct" id="low_pct" class="w-50" required placeholder="Low percentile">
+                                <input type="text" name="mid_pct" id="mid_pct" class="w-50" required placeholder="Mid percentile">
+                                <input type="text" name="high_pct" id="high_pct" class="w-50" required placeholder="High percentile">
+                                <br>
+                                <input type="checkbox" name="onelines" id="onelines" value="Onelines">
+                                <label for="onelines">Onelines</label>
+                                <br>
+                                <input type="checkbox" name="monthly" id="monthly" value="Monthly">
+                                <label for="onelines">Monthly</label>
+                                <br>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <input type="submit" id="run_aggregations" class="btn btn-primary" data-bs-dismiss="modal" name="run_aggregations" value="Run" disabled>
+                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="scenario" value="{{ scen.scenario }}">
+                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                            {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="GenComboCurveTCModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Generate ComboCurve Type Curves</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Convert Olive type curve to a ComboCurve type curve
+                </div>
+                <div class="modal-footer justify-content-start">
+                    <form class="form-inline d-inline" method="POST">
+                        {% csrf_token %}
+                        {% for scen in scenarios %}
+                            <label for="segments">Number of linear segments:</label>
+                            <input type="number" name="segments" id="segments" class="w-25 mt-1" required placeholder="Segments">
+                            <br>
+                            <label for="dmin">Terminal decline:</label>
+                            <input type="number" name="dmin" id="dmin" class="w-25 mt-1" required placeholder="Dmin">
+                            <br>
+                            <label for="min_rate">Minimum rate:</label>
+                            <input type="number" name="min_rate" id="min_rate" class="w-25 mt-1" required placeholder="Min rate">
+                            <br>
+                            {{ tc_list }}
+                            <br>
+                            <button type="button" class="btn btn-secondary ms-1 mt-1" data-bs-dismiss="modal">Cancel</button>
+                            <input type="submit" id="gen_cc_tc" class="btn btn-primary ms-1 mt-1" data-bs-dismiss="modal" name="gen_cc_tc" value="Generate">
+                            <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                            <input type="text" class="d-none" name="scenario" value="{{ scen.scenario }}">
+                            <input type="text" class="d-none" name="user" value="{{ user }}">
+                        {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="ArchiveModal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalLabel">Archive Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    {% for scen in scenarios %}
+                    Continue with archiving {{scen.scenario }}?
+                    {% endfor %}
+                </div>
+                <div class="modal-footer">
+                    <form class="form-inline d-inline" method="POST">
+                        {% csrf_token %}
+                        {% for scen in scenarios %}
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <input type="submit" class="btn btn-primary" data-bs-dismiss="modal" name="archive_scenario" value="Archive">
+                            <input type="text" class="d-none" name="scenario" value="{{ scen.scenario }}">
+                            <input type="text" class="d-none" name="user" value="{{ user }}">
+                        {% endfor %}
+                    </form>
+                </div>
+                </div>
+            </div>
+        </div>
+        <div class="alert alert-warning fade show" role="alert" id="progress">
+            <strong>!!</strong> Loading
+        </div>
+        {% if not user %}
+            <div class="alert alert-warning fade show" role="alert" id="no_user">
+                <strong>!!</strong> No user selected
+            </div>
+        {% endif %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>!!</strong> {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+            <a class="navbar-brand ps-2 pb-3"><strong>olive2</strong></a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                <ul class="navbar-nav">
+                    <li class="d-flex">
+                        <form method="POST" class="d-flex">
+                            <div class="d-flex me-2">
+                            {{ scenario_dropdown.as_p }}
+                            </div>
+                            {% csrf_token %}
+                                <input type="submit" class="btn btn-outline-primary btn-sm ms-1 nav_button" name="select_scenario" value="Select">
+                                <input type="submit" class="btn btn-outline-primary btn-sm ms-1 nav_button" name="edit_scenario" value="Edit">
+                                <input type="submit" class="btn btn-outline-primary btn-sm ms-1 nav_button" name="copy_scenario" value="Copy">
+                                <input type="submit" class="btn btn-outline-danger btn-sm ms-1 nav_button" name="new_scenario" value="New">
+                        </form>
+                        <form method="POST" class="d-flex">
+                            {% csrf_token %}
+                            <button type="button" class="btn btn-outline-primary ms-1 btn-sm nav_button" data-bs-toggle="modal" data-bs-target="#ArchiveModal">Archive</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="ml-auto col-auto">
+                    <div class="table-responsive-sm">
+                        {% if copy_scenario %}
+                            {% if scenarios %}
+                            <form method="POST" class="d-flex">
+                                {% csrf_token %}
+                                    {% for scen in scenarios %}
+                                    <table class="table table-striped w-auto">
+                                        <tr>
+                                            <th scope="row">Category</th>
+                                            <td>{{ scen.category }}</td>
+                                            <td>{{ copy_scenario.category }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Scenario</th>
+                                            <td>{{ scen.scenario }}</td>
+                                            <td>{{ copy_scenario.scenario }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Owner</th>
+                                            <td>{{ scen.owner }}</td>
+                                            <td>{{ copy_scenario.owner }}</td>
+                                            <input type="text" class="d-none" name="owner_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Project</th>
+                                            <td>{{ scen.project }}</td>
+                                            <td>{{ copy_scenario.project }}</td>
+                                            <input type="text" class="d-none" name="project_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Properties</th>
+                                            <td>{{ scen.properties }}</td>
+                                            <td>{{ copy_scenario.properties }}</td>
+                                            <input type="text" class="d-none" name="properties_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Framework</th>
+                                            <td>{{ scen.framework }}</td>
+                                            <td>{{ copy_scenario.framework }}</td>
+                                            <input type="text" class="d-none" name="framework_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Schedule</th>
+                                            <td>{{ scen.schedule }}</td>
+                                            <td>{{ copy_scenario.schedule }}</td>
+                                            <input type="text" class="d-none" name="schedule_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Economics</th>
+                                            <td>{{ scen.economics }}</td>
+                                            <td>{{ copy_scenario.economics }}</td>
+                                            <input type="text" class="d-none" name="economics_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Forecast</th>
+                                            <td>{{ scen.forecast }}</td>
+                                            <td>{{ copy_scenario.forecast }}</td>
+                                            <input type="text" class="d-none" name="forecast_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Price Deck</th>
+                                            <td>{{ scen.price_deck }}</td>
+                                            <td>{{ copy_scenario.price_deck }}</td>
+                                            <input type="text" class="d-none" name="price_deck_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Probability</th>
+                                            <td>{{ scen.probability }}</td>
+                                            <td>{{ copy_scenario.probability }}</td>
+                                            <input type="text" class="d-none" name="probability_version" value="{% now "Y-m-d G:i:s.u" %}">
+                                        </tr>
+                                        <tr>
+                                            <th scope="col"></th>
+                                            <th scope="col"></th>
+                                            <th scope="col">
+                                                <input type="submit" name="save" value="Save scenario">
+                                                <input type="text" class="d-none" name="version" value="{% now "Y-m-d G:i:s.u" %}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                                <input type="text" class="d-none" name="active" value=1>
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                            </th>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
+                                {% endif %}
+                            </form>
+                        {% elif edit_scenario %}
+                            {% if scenarios %}
+                            <form method="POST" class="d-flex">
+                                {% csrf_token %}
+                                    {% for scen in scenarios %}
+                                    <table class="table table-striped w-auto">
+                                        <tr>
+                                            <th scope="row">Category</th>
+                                            <td>{{ scen.category }}</td>
+                                            <td>{{ edit_scenario.category }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Scenario</th>
+                                            <td>{{ scen.scenario }}</td>
+                                            <td>{{ edit_scenario.scenario }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Owner</th>
+                                            <td>{{ scen.owner }}</td>
+                                            <td>{{ edit_scenario.owner }}</td>
+                                            <td>{{ edit_scenario.owner_version }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Project</th>
+                                            <td>{{ scen.project }}</td>
+                                            <td>{{ edit_scenario.project }}</td>
+                                            <td>{{ edit_scenario.project_version }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Properties</th>
+                                            <td>{{ scen.properties }}</td>
+                                            <td>{{ edit_scenario.properties }}</td>
+                                            <td>{{ edit_scenario.properties_version }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Framework</th>
+                                            <td>{{ scen.framework }}</td>
+                                            <td>{{ edit_scenario.framework }}</td>
+                                            <td>{{ edit_scenario.framework_version }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Schedule</th>
+                                            <td>{{ scen.schedule }}</td>
+                                            <td>{{ edit_scenario.schedule }}</td>
+                                            <td>
+                                                {{ edit_scenario.schedule_version }}
+                                                <input type="text" class="d-none" name="schedule_inputs_version" value="{{ scen.schedule_inputs_version|date:"c" }}">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Economics</th>
+                                            <td>{{ scen.economics }}</td>
+                                            <td>{{ edit_scenario.economics }}</td>
+                                            <td>{{ edit_scenario.economics_version }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Forecast</th>
+                                            <td>{{ scen.forecast }}</td>
+                                            <td>{{ edit_scenario.forecast }}</td>
+                                            <td>{{ edit_scenario.forecast_version }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Price Deck</th>
+                                            <td>{{ scen.price_deck }}</td>
+                                            <td>{{ edit_scenario.price_deck }}</td>
+                                            <td>{{ edit_scenario.price_deck_version }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Probability</th>
+                                            <td>{{ scen.probability }}</td>
+                                            <td>{{ edit_scenario.probability }}</td>
+                                            <td>{{ edit_scenario.probability_version }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="col"></th>
+                                            <th scope="col"></th>
+                                            <th scope="col">
+                                                <input type="submit" name="update" value="Update scenario">
+                                                <input type="text" class="d-none" name="active" value=1>
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                                <input type="text" class="d-none" name="version" value="{% now "Y-m-d G:i:s.u" %}">
+                                            </th>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
+                                {% endif %}
+                            </form>
+                        {% else %}
+                            {% if scenarios %}
+                                {% for scen in scenarios %}
+                                <table class="table table-striped w-auto">
+                                    <tr>
+                                        <!-- <th scope="col" colspan="2" class="text-center">Scenario List</td> -->
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Category</th>
+                                        <td>{{ scen.category }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Scenario</th>
+                                        <td>
+                                            {{ scen.scenario }}                                         
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Owner</th>
+                                        <td>
+                                            {% if scen.owner is None %}
+                                            ¯\_(ツ)_/¯
+                                            {% else %}
+                                            {{ scen.owner }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Project</th>
+                                        <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-info" name="select" value="{{ scen.project }}" onclick="return loading()">
+                                                <input type="submit" class="btn btn-outline-primary" name="edit" value="Edit">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="project" value="{{ scen.project }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#LoadProject">Load</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Properties</th>
+                                            <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-info" name="select" value="{{ scen.properties }}" onclick="return loading()">
+                                                <input type="submit" class="btn btn-outline-primary" name="edit" value="Edit">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="properties" value="{{ scen.properties }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#LoadProperties">Load</button>
+                                            </td>
+                                        
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Framework</th>
+                                        <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-info" name="select" value="{{ scen.framework }}" onclick="return loading()">
+                                                <input type="submit" class="btn btn-outline-primary" name="edit" value="Edit">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="framework" value="{{ scen.framework }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#LoadFramework">Load</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Schedule</th>
+                                        <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-info" name="select" value="{{ scen.schedule }}" onclick="return loading()">
+                                                <input type="submit" class="btn btn-outline-primary" name="edit" value="Edit">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="schedule" value="{{ scen.schedule }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>                                          
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#LoadSchedule">Load</button>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#CreateModal">Create</button>
+                                                <form class="form-inline d-inline" method="POST">
+                                                    {% csrf_token %}
+                                                    <input type="submit" class="btn btn-outline-primary" name="show_log" value="Show log">
+                                                    <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                    <input type="text" class="d-none" name="schedule_log" value="{{ scen.schedule }}">
+                                                    <input type="text" class="d-none" name="user" value="{{ user }}">
+                                                </form>
+                                                <br>
+                                                <form class="form-inline d-inline" method="POST">
+                                                    {% csrf_token %}
+                                                    <input type="submit" class="btn btn-outline-primary mt-1" name="select" value="Show file">
+                                                    <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                    <input type="text" class="d-none" name="schedule_file" value="{{ scen.schedule }}">
+                                                    <input type="text" class="d-none" name="user" value="{{ user }}">
+                                                </form>
+                                                <form class="form-inline d-inline" method="POST">
+                                                    {% csrf_token %}
+                                                    <input type="submit" class="btn btn-outline-primary mt-1" name="select" value="Show inputs">
+                                                    <input type="submit" class="btn btn-outline-primary mt-1" name="edit" value="Edit inputs">
+                                                    <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                    <input type="text" class="d-none" name="schedule_inputs" value="schedule_inputs">
+                                                    <input type="text" class="d-none" name="user" value="{{ user }}">
+                                                </form>
+                                                <button type="button" class="btn btn-outline-primary mt-1" data-bs-toggle="modal" data-bs-target="#LoadInputsModal">Load inputs</button>
+
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Economics</th>
+                                        <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-info" name="Select" value="{{ scen.economics }}" onclick="return loading()">
+                                                <input type="submit" class="btn btn-outline-primary" name="edit" value="Edit">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="economics" value="{{ scen.economics }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#LoadEconomics">Load</button>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Forecast</th>
+                                        <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-info" name="Select" value="{{ scen.forecast }}" onclick="return loading()">
+                                                <input type="submit" class="btn btn-outline-primary" name="edit" value="Edit">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="forecast" value="{{ scen.forecast }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#LoadForecast">Load</button>
+                                        <br>
+                                        <button type="button" class="btn btn-outline-primary mt-1" data-bs-toggle="modal" data-bs-target="#LoadTCModal">Load type curves</button>
+                                        <button type="button" class="btn btn-outline-primary mt-1" data-bs-toggle="modal" data-bs-target="#LoadPDPModal">Load PDP forecasts</button>
+                                        <br>
+                                        <button type="button" class="btn btn-outline-danger mt-1" data-bs-toggle="modal" data-bs-target="#GenComboCurveTCModal">Generate CC type curves</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Price Deck</th>
+                                        <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-info" name="Select" value="{{ scen.price_deck }}" onclick="return loading()">
+                                                <input type="submit" class="btn btn-outline-primary" name="edit" value="Edit">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="price_deck" value="{{ scen.price_deck }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#LoadPriceDeck">Load</button>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Probability</th>
+                                        <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-info" name="Select" value="{{ scen.probability }}" onclick="return loading()">
+                                                <input type="submit" class="btn btn-outline-primary" name="edit" value="Edit">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="probability" value="{{ scen.probability }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#LoadProbability">Load</button>
+                                                <form class="form-inline d-inline" method="POST">
+                                                    {% csrf_token %}
+                                                    <input type="submit" class="btn btn-outline-primary" name="select" value="Show log">
+                                                    <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                    <input type="text" class="d-none" name="user" value="{{ user }}">
+                                                    <input type="text" class="d-none" name="probability_log" value="probability_log">
+                                                </form>
+                                            </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Output</th>
+                                        <td>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-primary" name="deterministic" value="Generate deterministic cash flows" onclick="return loading()">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                            </form>
+                                            <br>
+                                            <button type="button" class="btn btn-outline-primary mt-1" data-bs-toggle="modal" data-bs-target="#RunProbModal">Run probabilistic analysis</button>
+                                            <br>
+                                            <button type="button" class="btn btn-outline-danger mt-1" data-bs-toggle="modal" data-bs-target="#RunAggModal">Aggregate results</button>
+                                            <br>
+                                            <form class="form-inline d-inline" method="POST">
+                                                {% csrf_token %}
+                                                <input type="submit" class="btn btn-outline-primary mt-1" name="output_log" value="Show log" onclick="return loading()">
+                                                <input type="text" class="d-none" name="_scenario" value="{{ scen.scenario }}">
+                                                <input type="text" class="d-none" name="user" value="{{ user }}">
+                                                <input type="text" class="d-none" name="output_log" value="output_log">
+                                            </form>
+                                        </td>
+                                    </tr>
+                                </table>
+                                {% endfor %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="ml-auto col-auto">
+                    {% if values %}
+                    <div class="tableFixHead">
+                        <table class="table table-striped w-auto table-fixed mr-0">
+                            <tr>
+                                {% for field in fields %}
+                                    <th scope="col">{{ field }}</th>
+                                {% endfor %}
+                            </tr>
+                            {% for prop in values|slice:":1000" %}
+                                <tr>
+                                    {% for field in fields %}
+                                        <td>{{ prop|get_obj_attr:field }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+        <script src="{% static 'custom.js' %}"></script>
+    </body>
+</html>
+{% endlocaltime %}
