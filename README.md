@@ -2,6 +2,24 @@
 
 ## OLIVE: Optimizing Linux-based Integrated Volumetrics and Economics
 
+### What problem are you trying to solve?
+
+Generating economics on a single well with monthly resolution is fast.
+Generating economics on a single well with daily resolution is slow.
+Generating economics on thousands of wells with daily resolution takes forever.
+Running a monte carlo simulation with unique inputs and distributions and generating economics on thousands of wells with daily resolution takes longer than the DMV.
+
+12 months for 50 years 	=	600 time steps
+
+365.25 days for 50 years	=	18,262.5 time steps
+
+**About 1,500X more data for one well!**
+
+Olive dramatically improves not just computation time but also write time.
+
+
+### What does Olive do?
+
 Consists of a user frontend run through a web browser, a Python codebase to compute data, and a SQL database backend to store output
 
 Neat features include:
